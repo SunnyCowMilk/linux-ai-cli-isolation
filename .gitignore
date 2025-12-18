@@ -1,0 +1,15 @@
+# AI Tools Config (contains API keys)
+.ai_tools_config/
+
+# Environment config (contains API keys)
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
