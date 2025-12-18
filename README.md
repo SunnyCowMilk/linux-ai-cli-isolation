@@ -1,23 +1,25 @@
 # Linux AI CLI Isolation
 
-在 Linux 服务器上部署隔离的 AI CLI 工具环境（Claude Code & Gemini CLI），支持多项目独立配置。
+在 Linux 服务器上部署隔离的 AI CLI 工具环境（Claude Code、Gemini CLI & Codex CLI），支持多项目独立配置。
 
-## ✨ 特性
+## 特性
 
-- 🔒 **完全隔离** - 每个项目独立的配置和缓存，不污染全局环境
-- 🐍 **Conda 集成** - 自动创建/管理 Conda 环境
-- 🚀 **国内加速** - 可选清华 Conda 源 + 淘宝 NPM 镜像
-- 🔑 **安全存储** - API 密钥存储在 Git 忽略的目录中
-- 🛠️ **自动配置** - 激活环境时自动加载所有配置
+- **完全隔离** - Claude/Gemini 每个项目独立的配置和缓存，不污染全局环境
+- **Conda 集成** - 自动创建/管理 Conda 环境
+- **国内加速** - 可选清华 Conda 源 + 淘宝 NPM 镜像
+- **安全存储** - API 密钥存储在 Git 忽略的目录中
+- **自动配置** - 激活环境时自动加载所有配置
+- **第三方 API 支持** - 支持配置第三方 API 代理服务
 
-## 📋 支持的工具
+## 支持的工具
 
-| 工具 | 说明 |
-|------|------|
-| [Claude Code](https://github.com/anthropics/claude-code) | Anthropic 官方 CLI |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Google 官方 CLI |
+| 工具 | 说明 | 隔离方式 |
+|------|------|----------|
+| [Claude Code](https://github.com/anthropics/claude-code) | Anthropic 官方 CLI | 项目级隔离 |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Google 官方 CLI | 项目级隔离 |
+| [Codex CLI](https://github.com/openai/codex) | OpenAI 官方 CLI | 全局配置 (~/.codex) |
 
-## 🚀 快速开始
+## 快速开始
 
 ### 1. 克隆项目
 
@@ -57,9 +59,12 @@ claude
 
 # 启动 Gemini CLI
 gemini
+
+# 启动 Codex CLI
+codex
 ```
 
-## ⚙️ 配置说明
+## 配置说明
 
 ### `.env` 配置项
 
@@ -76,61 +81,70 @@ USE_CN_MIRROR=true
 PROXY_URL=
 
 # --- [Claude Code 配置] ---
-# API 地址 (默认: https://api.anthropic.com)
-CLAUDE_URL=
-
-# API Key (必填!)
-CLAUDE_KEY=
-
-# 主模型 (默认: claude-opus-4-5-20251101-thinking)
-CLAUDE_MODEL=
-
-# 快速模型 (默认: claude-haiku-4-5-20251001)
-CLAUDE_SMALL_MODEL=
+CLAUDE_URL=                    # API 地址 (默认: https://api.anthropic.com)
+CLAUDE_KEY=                    # API Key (必填!)
+CLAUDE_MODEL=                  # 主模型 (默认: claude-opus-4-5-20251101-thinking)
+CLAUDE_SMALL_MODEL=            # 快速模型 (默认: claude-haiku-4-5-20251001)
 
 # --- [Gemini CLI 配置] ---
-# API 地址 (默认: https://generativelanguage.googleapis.com)
-GEMINI_URL=
+GEMINI_URL=                    # API 地址 (默认: https://generativelanguage.googleapis.com)
+GEMINI_KEY=                    # API Key (必填!)
+GEMINI_MODEL=                  # 模型 (默认: gemini-3-pro-preview)
 
-# API Key (必填!)
-GEMINI_KEY=
-
-# 模型 (默认: gemini-3-pro-preview)
-GEMINI_MODEL=
+# --- [Codex CLI 配置] ---
+CODEX_URL=                     # API 地址 (默认: https://api.openai.com/v1)
+CODEX_KEY=                     # API Key (必填!)
+CODEX_MODEL_PROVIDER=openai    # 模型提供者名称
+CODEX_MODEL=                   # 模型 (默认: gpt-5.1-codex-max)
+CODEX_REASONING_EFFORT=medium  # 推理等级: low/medium/high
+CODEX_WIRE_API=responses       # API 类型: responses/chat
+CODEX_NETWORK_ACCESS=enabled   # 网络访问: enabled/disabled
+CODEX_DISABLE_RESPONSE_STORAGE=true  # 禁用响应存储: true/false
 ```
 
-### 中转服务配置示例
+### 第三方 API 服务配置
 
-如果使用 API 中转服务：
+如果使用第三方 API 代理服务，需要相应修改配置：
 
 ```bash
-# Claude 中转
-CLAUDE_URL=https://your-claude-proxy.com
+# Claude 第三方服务
+CLAUDE_URL=https://your-api-proxy.com
 
-# Gemini 中转
-GEMINI_URL=https://your-gemini-proxy.com
+# Gemini 第三方服务
+GEMINI_URL=https://your-api-proxy.com
+
+# Codex 第三方服务
+CODEX_URL=https://your-api-proxy.com/v1
+CODEX_MODEL_PROVIDER=your_provider_name  # 重要：必须与服务提供商名称一致
+CODEX_MODEL=your-model-name
 ```
 
-## 📁 目录结构
+**注意**: 使用第三方 Codex 服务时，`CODEX_MODEL_PROVIDER` 必须设置为服务提供商指定的名称，否则可能无法正常连接。
+
+## 目录结构
 
 ```
 项目目录/
 ├── setup.sh              # 安装脚本
 ├── remove.sh             # 卸载脚本
 ├── .env.example          # 配置模板
-├── .env                  # 实际配置（不提交）
+├── .env                  # 实际配置（不提交 Git）
 ├── .gitignore
 ├── README.md
-└── .ai_tools_config/     # 运行时配置（不提交）
+└── .ai_tools_config/     # 运行时配置（不提交 Git）
     ├── .private_config/
     │   ├── secrets.env   # API 密钥
     │   └── npmrc         # NPM 配置
     ├── .private_storage/ # XDG 隔离目录
     └── .gemini/
         └── settings.json
+
+~/.codex/                 # Codex 全局配置目录
+├── config.toml           # Codex 配置
+└── auth.json             # Codex 认证
 ```
 
-## 🔧 常用命令
+## 常用命令
 
 ### 验证配置
 
@@ -138,10 +152,11 @@ GEMINI_URL=https://your-gemini-proxy.com
 # 查看环境变量
 echo $ANTHROPIC_API_KEY
 echo $GEMINI_API_KEY
-echo $GOOGLE_GEMINI_BASE_URL
+echo $OPENAI_API_KEY
 
 # 查看配置文件
 cat $AI_CONFIG_ROOT/.private_config/secrets.env
+cat ~/.codex/config.toml
 ```
 
 ### 重新安装
@@ -156,18 +171,37 @@ conda deactivate && conda activate ai_cli_env
 
 ```bash
 ./remove.sh
-# conda remove -n ai_cli_env --all -y # 谨慎！会删除当前conda环境，如果不需要这个环境了再运行这个
+# conda remove -n ai_cli_env --all -y  # 可选：删除整个 Conda 环境
 ```
 
-## ❓ 常见问题
+## 常见问题
 
-### Q: Gemini 报错 `fetch failed sending request`
+### Q: Claude/Gemini 报错连接失败
 
-**原因**: 网络无法访问 Google API
+**原因**: 网络无法访问官方 API
 
 **解决方案**:
-1. 使用中转服务，修改 `GEMINI_URL`
+1. 使用第三方 API 服务，修改对应的 `_URL` 配置
 2. 或配置代理，设置 `PROXY_URL`
+
+### Q: Codex 报错连接失败
+
+**原因**: 网络问题或配置错误
+
+**解决方案**:
+1. 检查 `CODEX_URL` 是否正确
+2. 如使用第三方服务，确保 `CODEX_MODEL_PROVIDER` 设置正确
+3. 或配置代理，设置 `PROXY_URL`
+
+### Q: Codex 报错 "Error finding codex home"
+
+**原因**: `CODEX_HOME` 环境变量指向了错误的目录
+
+**解决方案**:
+```bash
+unset CODEX_HOME
+conda deactivate && conda activate ai_cli_env
+```
 
 ### Q: 激活环境后命令找不到
 
@@ -177,15 +211,11 @@ conda deactivate
 conda activate ai_cli_env
 ```
 
-### Q: Node.js 版本不对
-
-**解决方案**: 重新运行 `./setup.sh`，脚本会自动升级
-
 ### Q: 如何在多个项目中使用
 
-每个项目独立克隆此仓库，配置各自的 `.env` 文件即可。不同项目的配置完全隔离。
+每个项目独立克隆此仓库，配置各自的 `.env` 文件即可。Claude/Gemini 的配置完全隔离，Codex 使用全局配置 (`~/.codex/`)。
 
-## 📜 环境变量参考
+## 环境变量参考
 
 ### Claude Code
 
@@ -204,10 +234,28 @@ conda activate ai_cli_env
 | `GEMINI_API_KEY` | API 密钥 |
 | `GEMINI_MODEL` | 模型名称 |
 
-## 🤝 贡献
+### Codex CLI
+
+| 变量 | 说明 |
+|------|------|
+| `OPENAI_API_KEY` | API 密钥 |
+| `OPENAI_BASE_URL` | API 地址 |
+
+### Codex 配置文件 (`~/.codex/config.toml`)
+
+| 配置项 | 说明 |
+|--------|------|
+| `model_provider` | 模型提供者名称 |
+| `model` | 使用的模型 |
+| `model_reasoning_effort` | 推理等级 (low/medium/high) |
+| `network_access` | 网络访问 (enabled/disabled) |
+| `disable_response_storage` | 禁用响应存储 (true/false) |
+| `wire_api` | API 类型 (responses/chat) |
+
+## 贡献
 
 欢迎提交 Issue 和 Pull Request！
 
-## 📄 License
+## License
 
 MIT License

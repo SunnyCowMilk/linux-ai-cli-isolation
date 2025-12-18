@@ -1,6 +1,9 @@
 # AI Tools Config (contains API keys)
 .ai_tools_config/
 
+# Claude Code local settings
+.claude/
+
 # Environment config (contains API keys)
 .env
 
