@@ -565,6 +565,62 @@ source ~/.zshrc    # zsh 用户
 ./setup.sh
 ```
 
+### Q: WSL 新环境如何从零开始安装？
+
+**问题**：新安装的 WSL（尤其是 Alpine Linux）可能缺少 git、bash、npm 等基础工具。
+
+**Alpine Linux 完整安装步骤**：
+```bash
+# 1. 安装基础工具
+apk update
+apk add git bash curl nodejs npm
+
+# 2. 克隆项目
+git clone https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git
+cd linux-ai-cli-isolation
+
+# 3. 配置
+cp .env.example .env
+vi .env   # 填写 API Key，建议使用 global 模式
+
+# 4. 运行安装
+chmod +x setup.sh
+bash setup.sh
+
+# 5. 重启 WSL 或执行
+source ~/.profile
+```
+
+**Ubuntu/Debian WSL 完整安装步骤**：
+```bash
+# 1. 安装基础工具
+sudo apt update
+sudo apt install git curl nodejs npm
+
+# 2. 克隆项目
+git clone https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git
+cd linux-ai-cli-isolation
+
+# 3. 配置
+cp .env.example .env
+nano .env   # 填写 API Key，建议使用 global 模式
+
+# 4. 运行安装
+chmod +x setup.sh
+./setup.sh
+
+# 5. 重启终端或执行
+source ~/.bashrc
+```
+
+**WSL 推荐配置**：
+```bash
+# WSL 建议使用 global 模式（无需 Conda）
+CLAUDE_MODE=global
+GEMINI_MODE=global
+CODEX_MODE=global
+```
+
 ---
 
 ## 环境变量参考
