@@ -63,7 +63,7 @@
 
 ```bash
 # 下载项目到本地
-git clone https://github.com/yourusername/linux-ai-cli-isolation.git
+git clone [https://github.com/yourusername/linux-ai-cli-isolation.git](https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git)
 
 # 进入项目目录
 cd linux-ai-cli-isolation
