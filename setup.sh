@@ -194,6 +194,15 @@ fi
 # ==========================================
 echo -e "\n${BLUE}>>> Installing CLI tools...${NC}"
 
+# Check if npm is available
+if ! command -v npm &> /dev/null; then
+    echo -e "${RED}❌ npm not found! Please install Node.js first.${NC}"
+    echo -e "${YELLOW}   Ubuntu/Debian: sudo apt install nodejs npm${NC}"
+    echo -e "${YELLOW}   Alpine:        apk add nodejs npm${NC}"
+    echo -e "${YELLOW}   macOS:         brew install node${NC}"
+    exit 1
+fi
+
 if [ "$CLAUDE_MODE" != "disabled" ]; then
     echo -e "📦 Installing Claude Code..."
     npm install -g @anthropic-ai/claude-code
