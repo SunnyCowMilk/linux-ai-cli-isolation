@@ -213,8 +213,10 @@ if [ "$GEMINI_MODE" != "disabled" ]; then
     npm install -g @google/gemini-cli
 fi
 
-# Codex is typically installed separately or via npm
-# npm install -g @openai/codex
+if [ "$CODEX_MODE" != "disabled" ]; then
+    echo -e "📦 Installing Codex CLI..."
+    npm install -g @openai/codex
+fi
 
 # ==========================================
 # [Phase 5] Configure Services
