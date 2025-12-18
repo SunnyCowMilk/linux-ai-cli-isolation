@@ -369,6 +369,7 @@ CODEX_URL=https://your-proxy-provider.com/v1
 ```
 linux-ai-cli-isolation/
 ├── setup.sh          # 安装脚本
+├── update.sh         # 更新配置脚本（无需重装）
 ├── remove.sh         # 卸载脚本
 ├── .env.example      # 配置模板（提交到 Git）
 ├── .env              # 你的配置（不提交到 Git）
@@ -456,6 +457,22 @@ CODEX_MODE=disabled     # 不安装
 ---
 
 ## 常用命令
+
+### 更新配置（更换 Key/Model/URL）
+
+安装后如需修改配置，**无需重新安装**：
+
+```bash
+# 1. 修改 .env 文件
+nano .env
+
+# 2. 运行更新脚本
+./update.sh
+
+# 3. 重新加载环境
+conda deactivate && conda activate ai_cli_env  # isolated 模式
+source ~/.bashrc                                # global 模式
+```
 
 ### 验证配置是否生效
 
