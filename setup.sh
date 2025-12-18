@@ -64,7 +64,6 @@ CLAUDE_SMALL_MODEL=${CLAUDE_SMALL_MODEL:-"claude-haiku-4-5-20251001"}
 GEMINI_URL=${GEMINI_URL:-"https://generativelanguage.googleapis.com"}
 GEMINI_MODEL=${GEMINI_MODEL:-"gemini-3-pro-preview"}
 CODEX_URL=${CODEX_URL:-"https://api.openai.com/v1"}
-CODEX_MODEL_PROVIDER=${CODEX_MODEL_PROVIDER:-"openai"}
 CODEX_MODEL=${CODEX_MODEL:-"gpt-5.1-codex-max"}
 CODEX_REASONING_EFFORT=${CODEX_REASONING_EFFORT:-"medium"}
 CODEX_WIRE_API=${CODEX_WIRE_API:-"responses"}
@@ -240,14 +239,14 @@ if [ "$CODEX_MODE" = "global" ]; then
     mkdir -p "$CODEX_HOME"
 
     cat << EOF > "$CODEX_HOME/config.toml"
-model_provider = "$CODEX_MODEL_PROVIDER"
+model_provider = "openai"
 model = "$CODEX_MODEL"
 model_reasoning_effort = "$CODEX_REASONING_EFFORT"
 network_access = "$CODEX_NETWORK_ACCESS"
 disable_response_storage = $CODEX_DISABLE_RESPONSE_STORAGE
 
-[model_providers.$CODEX_MODEL_PROVIDER]
-name = "$CODEX_MODEL_PROVIDER"
+[model_providers.openai]
+name = "openai"
 base_url = "$CODEX_URL"
 wire_api = "$CODEX_WIRE_API"
 requires_openai_auth = true
@@ -298,6 +297,12 @@ HEADER
     if [ "$GEMINI_MODE" = "isolated" ]; then
         echo "source \"$CONFIG_CONTAINER_DIR/.private_config/gemini.env\"" >> "$ACTIVATE_SCRIPT"
         echo "export GEMINI_HOME=\"$CONFIG_CONTAINER_DIR/.gemini\"" >> "$ACTIVATE_SCRIPT"
+    fi
+
+    # Codex global (set env vars to ensure priority over any existing values)
+    if [ "$CODEX_MODE" = "global" ]; then
+        echo "export OPENAI_API_KEY=\"$CODEX_KEY\"" >> "$ACTIVATE_SCRIPT"
+        echo "export OPENAI_BASE_URL=\"$CODEX_URL\"" >> "$ACTIVATE_SCRIPT"
     fi
 
     echo 'echo "🤖 AI CLI environment activated"' >> "$ACTIVATE_SCRIPT"

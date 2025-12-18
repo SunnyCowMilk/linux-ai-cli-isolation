@@ -125,7 +125,6 @@ GEMINI_MODEL=gemini-3-pro-preview
 CODEX_MODE=global            # global/disabled（不支持 isolated）
 CODEX_URL=                   # API 地址（默认: https://api.openai.com/v1）
 CODEX_KEY=                   # API Key（必填）
-CODEX_MODEL_PROVIDER=openai  # 模型提供者名称
 CODEX_MODEL=gpt-5.1-codex-max
 CODEX_REASONING_EFFORT=medium
 CODEX_WIRE_API=responses
@@ -142,9 +141,8 @@ CLAUDE_URL=https://your-api-proxy.com
 # Gemini 第三方服务
 GEMINI_URL=https://your-api-proxy.com
 
-# Codex 第三方服务
+# Codex 第三方服务（只需修改 URL，无需其他配置）
 CODEX_URL=https://your-api-proxy.com/v1
-CODEX_MODEL_PROVIDER=your_provider_name  # 必须与服务提供商名称一致
 ```
 
 ## 目录结构
@@ -266,8 +264,7 @@ cat ~/.codex/config.toml
 
 **解决方案**:
 1. 检查 `CODEX_URL` 是否正确
-2. 如使用第三方服务，确保 `CODEX_MODEL_PROVIDER` 设置正确
-3. 或配置代理：`PROXY_URL=http://127.0.0.1:7890`
+2. 或配置代理：`PROXY_URL=http://127.0.0.1:7890`
 
 ### Q: Codex 报错 "Error finding codex home"
 
