@@ -30,10 +30,10 @@ get_shell_profile() {
     fi
 }
 
-# Add source command to shell profile (avoid duplicates)
-add_to_shell_profile() {
+# Add source command to a profile file (avoid duplicates)
+add_to_profile_file() {
     local env_file="$1"
-    local profile_file=$(get_shell_profile)
+    local profile_file="$2"
     local source_line="[ -f \"$env_file\" ] && source \"$env_file\""
 
     if [ -f "$profile_file" ]; then
@@ -48,10 +48,28 @@ add_to_shell_profile() {
             return 1
         fi
     else
-        echo "$source_line" > "$profile_file"
+        echo "# AI CLI Configuration (added by setup.sh)" > "$profile_file"
+        echo "$source_line" >> "$profile_file"
         echo -e "${GREEN}   ✅ Created $profile_file${NC}"
         return 0
     fi
+}
+
+# Add source command to shell profile (handles both login and interactive shells)
+add_to_shell_profile() {
+    local env_file="$1"
+    local shell_profile=$(get_shell_profile)
+    local result=1
+
+    # Add to shell-specific profile (.bashrc or .zshrc)
+    add_to_profile_file "$env_file" "$shell_profile" && result=0
+
+    # Also add to .profile for login shells (Alpine, WSL, etc.)
+    if [ "$shell_profile" != "$HOME/.profile" ]; then
+        add_to_profile_file "$env_file" "$HOME/.profile" && result=0
+    fi
+
+    return $result
 }
 
 # ==========================================
