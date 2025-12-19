@@ -30,8 +30,11 @@ REPO_MIRRORS=(
     "https://ghproxy.com/https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git"
     "https://gh-proxy.com/https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git"
 )
+# jsdelivr 作为最后备选（不支持 git clone，需要逐个下载文件）
+JSDELIVR_BASE="https://cdn.jsdelivr.net/gh/SunnyCowMilk/linux-ai-cli-isolation@main"
 INSTALL_DIR="$HOME/linux-ai-cli-isolation"
 SELECTED_REPO=""
+USE_JSDELIVR=false
 
 # ==========================================
 # 检测已有安装
@@ -103,24 +106,43 @@ check_network() {
 
     echo -e "${YELLOW}   ⚠️  无法直接访问 GitHub，尝试镜像源...${NC}"
 
-    # 依次测试镜像源
-    for mirror in "${REPO_MIRRORS[@]}"; do
-        # 提取域名用于显示
-        local domain=$(echo "$mirror" | sed 's|https://||' | cut -d'/' -f1)
-        echo -n "   测试 $domain ... "
+    # 测试 ghproxy 镜像源（使用真实文件 URL 测试）
+    local test_urls=(
+        "https://mirror.ghproxy.com/https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/README.md"
+        "https://ghproxy.com/https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/README.md"
+        "https://gh-proxy.com/https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/README.md"
+    )
+    local mirror_names=("mirror.ghproxy.com" "ghproxy.com" "gh-proxy.com")
 
-        if curl -s --connect-timeout 5 "$mirror" > /dev/null 2>&1; then
+    for i in "${!test_urls[@]}"; do
+        echo -n "   测试 ${mirror_names[$i]} ... "
+        if curl -s --connect-timeout 8 "${test_urls[$i]}" > /dev/null 2>&1; then
             echo -e "${GREEN}可用${NC}"
-            SELECTED_REPO="$mirror"
+            SELECTED_REPO="${REPO_MIRRORS[$i]}"
             return 0
         else
             echo -e "${RED}不可用${NC}"
         fi
     done
 
+    # 最后测试 jsdelivr CDN
+    echo -n "   测试 jsdelivr CDN ... "
+    if curl -s --connect-timeout 8 "${JSDELIVR_BASE}/README.md" > /dev/null 2>&1; then
+        echo -e "${GREEN}可用${NC}"
+        echo -e "${YELLOW}   注意: jsdelivr 模式下载较慢，请耐心等待${NC}"
+        USE_JSDELIVR=true
+        return 0
+    else
+        echo -e "${RED}不可用${NC}"
+    fi
+
     # 所有镜像都不可用
     echo -e "${RED}❌ 所有镜像源都不可用${NC}"
-    echo -e "${YELLOW}   请检查网络连接或使用代理${NC}"
+    echo ""
+    echo -e "${YELLOW}请尝试:${NC}"
+    echo -e "  1. 检查网络连接"
+    echo -e "  2. 配置代理后重试"
+    echo -e "  3. 手动下载项目后运行 ./setup.sh"
     exit 1
 }
 
@@ -170,13 +192,46 @@ download_project() {
         fi
     fi
 
-    # 使用 git clone 下载
-    echo -e "   正在克隆仓库..."
-    if git clone --depth 1 "$SELECTED_REPO" "$INSTALL_DIR" 2>/dev/null; then
-        echo -e "${GREEN}   ✅ 下载完成${NC}"
+    if [ "$USE_JSDELIVR" = true ]; then
+        # jsdelivr 模式：逐个下载文件
+        echo -e "   使用 jsdelivr CDN 下载..."
+        download_via_jsdelivr
     else
-        echo -e "${RED}❌ 下载失败，请检查网络连接${NC}"
-        exit 1
+        # git clone 模式
+        echo -e "   正在克隆仓库..."
+        if git clone --depth 1 "$SELECTED_REPO" "$INSTALL_DIR" 2>/dev/null; then
+            echo -e "${GREEN}   ✅ 下载完成${NC}"
+        else
+            echo -e "${RED}❌ 下载失败，请检查网络连接${NC}"
+            exit 1
+        fi
+    fi
+}
+
+# ==========================================
+# 通过 jsdelivr 下载文件
+# ==========================================
+download_via_jsdelivr() {
+    mkdir -p "$INSTALL_DIR"
+    local files=("setup.sh" "update.sh" "remove.sh" ".env.example" "README.md" ".gitignore" "quick.sh")
+    local failed=0
+
+    for file in "${files[@]}"; do
+        echo -n "   下载 $file ... "
+        if curl -fsSL --connect-timeout 15 "${JSDELIVR_BASE}/${file}" -o "$INSTALL_DIR/$file" 2>/dev/null; then
+            echo -e "${GREEN}✓${NC}"
+        else
+            echo -e "${RED}✗${NC}"
+            ((failed++))
+        fi
+    done
+
+    chmod +x "$INSTALL_DIR"/*.sh 2>/dev/null || true
+
+    if [ $failed -gt 0 ]; then
+        echo -e "${YELLOW}   ⚠️  部分文件下载失败，但核心文件可能已下载${NC}"
+    else
+        echo -e "${GREEN}   ✅ 下载完成${NC}"
     fi
 }
 
