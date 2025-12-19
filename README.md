@@ -57,7 +57,27 @@
 > **为什么 Codex 不支持 isolated？**
 > Codex CLI 的设计限制，它只能读取固定位置（`~/.codex/`）的配置文件，无法自定义配置路径。
 
-## 快速开始
+## 一键安装（推荐）
+
+最简单的安装方式，运行一条命令即可：
+
+```bash
+# 国际网络
+curl -fsSL https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/install.sh | bash
+
+# 国内网络（使用加速镜像）
+curl -fsSL https://ghproxy.com/https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/install.sh | bash
+```
+
+安装脚本会自动：
+1. 检测网络环境（自动选择最快的下载源）
+2. 下载项目到 `~/linux-ai-cli-isolation`
+3. 引导你配置 API Key（支持交互式配置）
+4. 运行安装程序
+
+> **提示**：如果没有 curl，可以先安装：`apt install curl` 或 `apk add curl`
+
+## 手动安装
 
 ### 第一步：克隆项目
 
@@ -368,6 +388,7 @@ CODEX_URL=https://your-proxy-provider.com/v1
 
 ```
 linux-ai-cli-isolation/
+├── install.sh        # 一键安装脚本（curl 下载使用）
 ├── setup.sh          # 安装脚本
 ├── update.sh         # 更新配置脚本（无需重装）
 ├── remove.sh         # 卸载脚本
