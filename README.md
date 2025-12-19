@@ -77,6 +77,16 @@ curl -fsSL https://ghproxy.com/https://raw.githubusercontent.com/SunnyCowMilk/li
 
 > **提示**：如果没有 curl，可以先安装：`apt install curl` 或 `apk add curl`
 
+### 一键卸载
+
+```bash
+# 国际网络
+curl -fsSL https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/uninstall.sh | bash
+
+# 国内网络
+curl -fsSL https://ghproxy.com/https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/uninstall.sh | bash
+```
+
 ## 手动安装
 
 ### 第一步：克隆项目
@@ -389,6 +399,7 @@ CODEX_URL=https://your-proxy-provider.com/v1
 ```
 linux-ai-cli-isolation/
 ├── install.sh        # 一键安装脚本（curl 下载使用）
+├── uninstall.sh      # 一键卸载脚本（curl 下载使用）
 ├── setup.sh          # 安装脚本
 ├── update.sh         # 更新配置脚本（无需重装）
 ├── remove.sh         # 卸载脚本
