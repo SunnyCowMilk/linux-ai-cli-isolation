@@ -221,19 +221,36 @@ if ! command -v npm &> /dev/null; then
     exit 1
 fi
 
+# Determine if sudo is needed for global npm install
+NPM_CMD="npm install -g"
+if [ "$NEED_CONDA" = false ]; then
+    # Global mode: check if we can write to npm global directory
+    NPM_PREFIX=$(npm config get prefix 2>/dev/null)
+    if [ -n "$NPM_PREFIX" ] && [ ! -w "$NPM_PREFIX/lib/node_modules" ] 2>/dev/null; then
+        if command -v sudo &> /dev/null; then
+            echo -e "${YELLOW}   需要 sudo 权限安装全局 npm 包${NC}"
+            NPM_CMD="sudo npm install -g"
+        else
+            echo -e "${RED}❌ 需要 sudo 权限但 sudo 不可用${NC}"
+            echo -e "${YELLOW}   请使用 root 用户运行，或配置 npm 使用用户目录${NC}"
+            exit 1
+        fi
+    fi
+fi
+
 if [ "$CLAUDE_MODE" != "disabled" ]; then
     echo -e "📦 Installing Claude Code..."
-    npm install -g @anthropic-ai/claude-code
+    $NPM_CMD @anthropic-ai/claude-code
 fi
 
 if [ "$GEMINI_MODE" != "disabled" ]; then
     echo -e "📦 Installing Gemini CLI..."
-    npm install -g @google/gemini-cli
+    $NPM_CMD @google/gemini-cli
 fi
 
 if [ "$CODEX_MODE" != "disabled" ]; then
     echo -e "📦 Installing Codex CLI..."
-    npm install -g @openai/codex
+    $NPM_CMD @openai/codex
 fi
 
 # ==========================================
