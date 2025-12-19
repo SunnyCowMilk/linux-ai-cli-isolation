@@ -67,7 +67,7 @@ check_existing_install() {
         done
         echo ""
         echo -e "${YELLOW}如果继续安装，全局配置文件将被覆盖。${NC}"
-        read -p "是否继续？(y/N): " confirm
+        read -p "是否继续？(y/N): " confirm < /dev/tty
         if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
             echo -e "${BLUE}已取消安装${NC}"
             exit 0
@@ -164,7 +164,7 @@ download_project() {
 
     if [ -d "$INSTALL_DIR" ]; then
         echo -e "${YELLOW}   ⚠️  目录已存在: $INSTALL_DIR${NC}"
-        read -p "   是否删除并重新下载？(y/N): " confirm
+        read -p "   是否删除并重新下载？(y/N): " confirm < /dev/tty
         if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
             rm -rf "$INSTALL_DIR"
         else
@@ -225,61 +225,61 @@ interactive_config() {
 
     # ========== Claude 配置 ==========
     echo -e "${BOLD}━━━ Claude Code ━━━${NC}"
-    read -p "模式 [global/isolated/disabled] (默认 global): " claude_mode
+    read -p "模式 [global/isolated/disabled] (默认 global): " claude_mode < /dev/tty
     claude_mode=${claude_mode:-global}
 
     if [ "$claude_mode" != "disabled" ]; then
-        read -p "API Key (必填): " claude_key
-        read -p "API URL (留空使用官方 api.anthropic.com): " claude_url
+        read -p "API Key (必填): " claude_key < /dev/tty
+        read -p "API URL (留空使用官方 api.anthropic.com): " claude_url < /dev/tty
 
         echo -e "${YELLOW}   默认主模型: claude-opus-4-5-20251101-thinking${NC}"
-        read -p "主模型名称 (留空使用默认): " claude_model
+        read -p "主模型名称 (留空使用默认): " claude_model < /dev/tty
         claude_model=${claude_model:-claude-opus-4-5-20251101-thinking}
 
         echo -e "${YELLOW}   默认快速模型: claude-sonnet-4-5-20250929${NC}"
-        read -p "快速模型名称 (留空使用默认): " claude_small_model
+        read -p "快速模型名称 (留空使用默认): " claude_small_model < /dev/tty
         claude_small_model=${claude_small_model:-claude-sonnet-4-5-20250929}
     fi
 
     # ========== Gemini 配置 ==========
     echo -e "\n${BOLD}━━━ Gemini CLI ━━━${NC}"
-    read -p "模式 [global/isolated/disabled] (默认 global): " gemini_mode
+    read -p "模式 [global/isolated/disabled] (默认 global): " gemini_mode < /dev/tty
     gemini_mode=${gemini_mode:-global}
 
     if [ "$gemini_mode" != "disabled" ]; then
-        read -p "API Key (必填): " gemini_key
-        read -p "API URL (留空使用官方 generativelanguage.googleapis.com): " gemini_url
+        read -p "API Key (必填): " gemini_key < /dev/tty
+        read -p "API URL (留空使用官方 generativelanguage.googleapis.com): " gemini_url < /dev/tty
 
         echo -e "${YELLOW}   默认模型: gemini-3-pro-preview${NC}"
-        read -p "模型名称 (留空使用默认): " gemini_model
+        read -p "模型名称 (留空使用默认): " gemini_model < /dev/tty
         gemini_model=${gemini_model:-gemini-3-pro-preview}
     fi
 
     # ========== Codex 配置 ==========
     echo -e "\n${BOLD}━━━ Codex CLI ━━━${NC}"
     echo -e "${YELLOW}   注意: Codex 不支持 isolated 模式${NC}"
-    read -p "模式 [global/disabled] (默认 global): " codex_mode
+    read -p "模式 [global/disabled] (默认 global): " codex_mode < /dev/tty
     codex_mode=${codex_mode:-global}
 
     if [ "$codex_mode" != "disabled" ]; then
-        read -p "API Key (必填): " codex_key
-        read -p "API URL (留空使用官方，第三方通常需加 /v1): " codex_url
+        read -p "API Key (必填): " codex_key < /dev/tty
+        read -p "API URL (留空使用官方，第三方通常需加 /v1): " codex_url < /dev/tty
 
         echo -e "${YELLOW}   默认模型: gpt-5.1-codex-max${NC}"
-        read -p "模型名称 (留空使用默认): " codex_model
+        read -p "模型名称 (留空使用默认): " codex_model < /dev/tty
         codex_model=${codex_model:-gpt-5.1-codex-max}
 
         echo -e "${YELLOW}   推理深度: low(快速) / medium(平衡) / high(深度)${NC}"
-        read -p "推理深度 (默认 medium): " codex_reasoning
+        read -p "推理深度 (默认 medium): " codex_reasoning < /dev/tty
         codex_reasoning=${codex_reasoning:-medium}
     fi
 
     # ========== 通用配置 ==========
     echo -e "\n${BOLD}━━━ 通用配置 ━━━${NC}"
-    read -p "使用国内镜像加速？[true/false] (默认 true): " use_cn_mirror
+    read -p "使用国内镜像加速？[true/false] (默认 true): " use_cn_mirror < /dev/tty
     use_cn_mirror=${use_cn_mirror:-true}
 
-    read -p "代理地址 (留空不使用，如 http://127.0.0.1:7890): " proxy_url
+    read -p "代理地址 (留空不使用，如 http://127.0.0.1:7890): " proxy_url < /dev/tty
 
     # ========== 写入配置 ==========
     cat > "$INSTALL_DIR/.env" << EOF
@@ -333,7 +333,7 @@ do_install() {
     echo -e "  ${GREEN}2)${NC} 手动编辑 .env 文件"
     echo -e "  ${GREEN}3)${NC} 使用默认配置"
     echo ""
-    read -p "请选择 [1-3]: " config_choice
+    read -p "请选择 [1-3]: " config_choice < /dev/tty
 
     cd "$INSTALL_DIR"
     cp -n .env.example .env 2>/dev/null || true
@@ -378,7 +378,7 @@ do_uninstall() {
     fi
 
     echo -e "${YELLOW}即将卸载 AI CLI 工具${NC}"
-    read -p "确认卸载？(y/N): " confirm
+    read -p "确认卸载？(y/N): " confirm < /dev/tty
     if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
         echo -e "${BLUE}已取消${NC}"
         exit 0
@@ -391,7 +391,7 @@ do_uninstall() {
         ./remove.sh
     fi
 
-    read -p "是否删除安装目录？(y/N): " delete_dir
+    read -p "是否删除安装目录？(y/N): " delete_dir < /dev/tty
     if [ "$delete_dir" = "y" ] || [ "$delete_dir" = "Y" ]; then
         rm -rf "$INSTALL_DIR"
         echo -e "${GREEN}✅ 安装目录已删除${NC}"
@@ -423,7 +423,7 @@ do_update() {
     echo -e "  ${GREEN}1)${NC} 重新配置（交互式）"
     echo -e "  ${GREEN}2)${NC} 仅更新配置（运行 update.sh）"
     echo ""
-    read -p "请选择 [1-2]: " update_choice
+    read -p "请选择 [1-2]: " update_choice < /dev/tty
 
     case $update_choice in
         1)
@@ -463,7 +463,7 @@ show_menu() {
     echo -e "  ${GREEN}3)${NC} 更新配置"
     echo -e "  ${GREEN}0)${NC} 退出"
     echo ""
-    read -p "请选择 [0-3]: " choice
+    read -p "请选择 [0-3]: " choice < /dev/tty
 
     case $choice in
         1) do_install ;;
