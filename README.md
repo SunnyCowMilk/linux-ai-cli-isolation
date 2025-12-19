@@ -62,29 +62,30 @@
 最简单的安装方式，运行一条命令即可：
 
 ```bash
-# 国际网络
+# 国际网络（直连 GitHub）
 curl -fsSL https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/quick.sh | bash
 
-# 国内网络（使用加速镜像）
-curl -fsSL https://ghproxy.com/https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/quick.sh | bash
+# 国内网络（使用 jsdelivr CDN 加速）
+curl -fsSL https://cdn.jsdelivr.net/gh/SunnyCowMilk/linux-ai-cli-isolation@main/quick.sh | bash
 ```
 
 运行后会显示菜单，选择：
-1. **安装** - 下载项目 + 交互式配置 + 自动安装
+1. **安装** - 自动检测网络 → 下载项目 → 交互式配置 → 安装
 2. **卸载** - 清理配置 + 删除安装目录
 3. **更新** - 拉取最新代码 + 重新配置
 
-也可以直接指定操作：
+**网络自动切换**：脚本会自动检测网络环境，依次尝试：
+- GitHub 直连
+- jsdelivr CDN
+- mirror.ghproxy.com
+- ghproxy.com
+
+也可以直接指定操作（跳过菜单）：
 
 ```bash
-# 直接安装
-curl -fsSL https://xxx/quick.sh | bash -s -- install
-
-# 直接卸载
-curl -fsSL https://xxx/quick.sh | bash -s -- uninstall
-
-# 更新配置
-curl -fsSL https://xxx/quick.sh | bash -s -- update
+curl -fsSL <上述地址> | bash -s -- install    # 直接安装
+curl -fsSL <上述地址> | bash -s -- uninstall  # 直接卸载
+curl -fsSL <上述地址> | bash -s -- update     # 更新配置
 ```
 
 > **提示**：如果没有 curl，可以先安装：`apt install curl` 或 `apk add curl`

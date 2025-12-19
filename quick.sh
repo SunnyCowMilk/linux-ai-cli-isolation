@@ -5,8 +5,8 @@
 # 使用方法:
 #   curl -fsSL https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/quick.sh | bash
 #
-# 国内用户:
-#   curl -fsSL https://ghproxy.com/https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/quick.sh | bash
+# 国内用户（使用 jsdelivr CDN 加速）:
+#   curl -fsSL https://cdn.jsdelivr.net/gh/SunnyCowMilk/linux-ai-cli-isolation@main/quick.sh | bash
 #
 # 直接指定操作:
 #   curl ... | bash -s -- install    # 直接安装
@@ -23,9 +23,15 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-REPO_URL="https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git"
-REPO_URL_CN="https://ghproxy.com/https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git"
+# GitHub 仓库地址（多镜像源）
+REPO_GITHUB="https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git"
+REPO_MIRRORS=(
+    "https://cdn.jsdelivr.net/gh/SunnyCowMilk/linux-ai-cli-isolation"
+    "https://mirror.ghproxy.com/https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git"
+    "https://ghproxy.com/https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git"
+)
 INSTALL_DIR="$HOME/linux-ai-cli-isolation"
+SELECTED_REPO=""
 
 # ==========================================
 # 检测已有安装
@@ -83,17 +89,42 @@ show_banner() {
 }
 
 # ==========================================
-# 检测网络环境
+# 检测网络环境（多镜像自动切换）
 # ==========================================
 check_network() {
     echo -e "${BLUE}>>> 检测网络环境...${NC}"
+
+    # 先测试 GitHub 直连
     if curl -s --connect-timeout 5 https://github.com > /dev/null 2>&1; then
         echo -e "${GREEN}   ✅ 可直接访问 GitHub${NC}"
-        USE_PROXY=false
-    else
-        echo -e "${YELLOW}   ⚠️  无法直接访问 GitHub，使用加速镜像${NC}"
-        USE_PROXY=true
+        SELECTED_REPO="$REPO_GITHUB"
+        return 0
     fi
+
+    echo -e "${YELLOW}   ⚠️  无法直接访问 GitHub，尝试镜像源...${NC}"
+
+    # 依次测试镜像源
+    for mirror in "${REPO_MIRRORS[@]}"; do
+        local test_url="$mirror"
+        # jsdelivr 需要特殊处理
+        if [[ "$mirror" == *"jsdelivr"* ]]; then
+            test_url="${mirror}@main/README.md"
+        fi
+
+        echo -n "   测试 ${mirror%%/*}... "
+        if curl -s --connect-timeout 5 "$test_url" > /dev/null 2>&1; then
+            echo -e "${GREEN}可用${NC}"
+            SELECTED_REPO="$mirror"
+            return 0
+        else
+            echo -e "${RED}不可用${NC}"
+        fi
+    done
+
+    # 所有镜像都不可用
+    echo -e "${RED}❌ 所有镜像源都不可用${NC}"
+    echo -e "${YELLOW}   请检查网络连接或使用代理${NC}"
+    exit 1
 }
 
 # ==========================================
@@ -142,17 +173,41 @@ download_project() {
         fi
     fi
 
-    if [ "$USE_PROXY" = true ]; then
-        echo -e "   使用加速镜像下载..."
-        git clone "$REPO_URL_CN" "$INSTALL_DIR" 2>/dev/null || {
-            echo -e "${YELLOW}   加速镜像失败，尝试直接下载...${NC}"
-            git clone "$REPO_URL" "$INSTALL_DIR"
-        }
+    # 根据镜像源类型选择下载方式
+    if [[ "$SELECTED_REPO" == *"jsdelivr"* ]]; then
+        # jsdelivr 不支持 git clone，需要手动下载文件
+        echo -e "   使用 jsdelivr CDN 下载..."
+        download_via_jsdelivr
     else
-        git clone "$REPO_URL" "$INSTALL_DIR"
+        # 使用 git clone
+        echo -e "   使用 git clone 下载..."
+        git clone "$SELECTED_REPO" "$INSTALL_DIR" || {
+            echo -e "${RED}❌ 下载失败${NC}"
+            exit 1
+        }
     fi
 
     echo -e "${GREEN}   ✅ 下载完成${NC}"
+}
+
+# ==========================================
+# 通过 jsdelivr 下载（备用方案）
+# ==========================================
+download_via_jsdelivr() {
+    mkdir -p "$INSTALL_DIR"
+    local base_url="$SELECTED_REPO@main"
+    local files=("setup.sh" "update.sh" "remove.sh" ".env.example" "README.md" ".gitignore" "quick.sh")
+
+    for file in "${files[@]}"; do
+        echo -n "   下载 $file... "
+        if curl -fsSL "${base_url}/${file}" -o "$INSTALL_DIR/$file" 2>/dev/null; then
+            echo -e "${GREEN}✓${NC}"
+        else
+            echo -e "${RED}✗${NC}"
+        fi
+    done
+
+    chmod +x "$INSTALL_DIR"/*.sh 2>/dev/null || true
 }
 
 # ==========================================
