@@ -28,6 +28,49 @@ REPO_URL_CN="https://ghproxy.com/https://github.com/SunnyCowMilk/linux-ai-cli-is
 INSTALL_DIR="$HOME/linux-ai-cli-isolation"
 
 # ==========================================
+# 检测已有安装
+# ==========================================
+check_existing_install() {
+    local found=false
+    local locations=()
+
+    # 检测全局配置文件
+    if [ -f "$HOME/.claude_env" ] || [ -f "$HOME/.gemini_env" ] || [ -f "$HOME/.codex_env" ]; then
+        found=true
+        locations+=("全局配置文件 (~/.claude_env 等)")
+    fi
+
+    # 检测默认安装目录
+    if [ -d "$INSTALL_DIR" ]; then
+        found=true
+        locations+=("$INSTALL_DIR")
+    fi
+
+    # 检测当前目录是否是项目目录
+    if [ -f "./setup.sh" ] && [ -f "./.env.example" ]; then
+        if [ "$(pwd)" != "$INSTALL_DIR" ]; then
+            found=true
+            locations+=("当前目录 $(pwd)")
+        fi
+    fi
+
+    if [ "$found" = true ]; then
+        echo -e "${YELLOW}⚠️  检测到已有安装:${NC}"
+        for loc in "${locations[@]}"; do
+            echo -e "   - $loc"
+        done
+        echo ""
+        echo -e "${YELLOW}如果继续安装，全局配置文件将被覆盖。${NC}"
+        read -p "是否继续？(y/N): " confirm
+        if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+            echo -e "${BLUE}已取消安装${NC}"
+            exit 0
+        fi
+        echo ""
+    fi
+}
+
+# ==========================================
 # 显示 Banner
 # ==========================================
 show_banner() {
@@ -225,6 +268,7 @@ EOF
 # ==========================================
 do_install() {
     show_banner
+    check_existing_install
     check_network
     check_dependencies
     download_project
