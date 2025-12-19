@@ -119,68 +119,99 @@ interactive_config() {
     echo -e "\n${BLUE}>>> 交互式配置${NC}"
     echo -e "${YELLOW}提示: 留空使用默认值，按 Enter 跳过${NC}\n"
 
-    echo -e "${BOLD}选择配置模式:${NC}"
-    echo -e "  ${GREEN}global${NC}   - 全局配置（推荐个人电脑/WSL）"
-    echo -e "  ${GREEN}isolated${NC} - 项目级隔离（需要 Conda）"
+    echo -e "${BOLD}配置模式说明:${NC}"
+    echo -e "  ${GREEN}global${NC}   - 全局配置（推荐个人电脑/WSL，无需 Conda）"
+    echo -e "  ${GREEN}isolated${NC} - 项目级隔离（需要 Conda，支持多项目不同配置）"
     echo -e "  ${GREEN}disabled${NC} - 禁用该服务"
     echo ""
 
-    # Claude 配置
-    echo -e "${BOLD}--- Claude Code ---${NC}"
+    # ========== Claude 配置 ==========
+    echo -e "${BOLD}━━━ Claude Code ━━━${NC}"
     read -p "模式 [global/isolated/disabled] (默认 global): " claude_mode
     claude_mode=${claude_mode:-global}
+
     if [ "$claude_mode" != "disabled" ]; then
         read -p "API Key (必填): " claude_key
-        read -p "API URL (留空使用官方): " claude_url
+        read -p "API URL (留空使用官方 api.anthropic.com): " claude_url
+
+        echo -e "${YELLOW}   默认主模型: claude-opus-4-5-20251101-thinking${NC}"
+        read -p "主模型名称 (留空使用默认): " claude_model
+        claude_model=${claude_model:-claude-opus-4-5-20251101-thinking}
+
+        echo -e "${YELLOW}   默认快速模型: claude-sonnet-4-5-20250929${NC}"
+        read -p "快速模型名称 (留空使用默认): " claude_small_model
+        claude_small_model=${claude_small_model:-claude-sonnet-4-5-20250929}
     fi
 
-    # Gemini 配置
-    echo -e "\n${BOLD}--- Gemini CLI ---${NC}"
+    # ========== Gemini 配置 ==========
+    echo -e "\n${BOLD}━━━ Gemini CLI ━━━${NC}"
     read -p "模式 [global/isolated/disabled] (默认 global): " gemini_mode
     gemini_mode=${gemini_mode:-global}
+
     if [ "$gemini_mode" != "disabled" ]; then
         read -p "API Key (必填): " gemini_key
-        read -p "API URL (留空使用官方): " gemini_url
+        read -p "API URL (留空使用官方 generativelanguage.googleapis.com): " gemini_url
+
+        echo -e "${YELLOW}   默认模型: gemini-3-pro-preview${NC}"
+        read -p "模型名称 (留空使用默认): " gemini_model
+        gemini_model=${gemini_model:-gemini-3-pro-preview}
     fi
 
-    # Codex 配置
-    echo -e "\n${BOLD}--- Codex CLI ---${NC}"
+    # ========== Codex 配置 ==========
+    echo -e "\n${BOLD}━━━ Codex CLI ━━━${NC}"
+    echo -e "${YELLOW}   注意: Codex 不支持 isolated 模式${NC}"
     read -p "模式 [global/disabled] (默认 global): " codex_mode
     codex_mode=${codex_mode:-global}
+
     if [ "$codex_mode" != "disabled" ]; then
         read -p "API Key (必填): " codex_key
-        read -p "API URL (留空使用官方): " codex_url
+        read -p "API URL (留空使用官方，第三方通常需加 /v1): " codex_url
+
+        echo -e "${YELLOW}   默认模型: gpt-5.1-codex-max${NC}"
+        read -p "模型名称 (留空使用默认): " codex_model
+        codex_model=${codex_model:-gpt-5.1-codex-max}
+
+        echo -e "${YELLOW}   推理深度: low(快速) / medium(平衡) / high(深度)${NC}"
+        read -p "推理深度 (默认 medium): " codex_reasoning
+        codex_reasoning=${codex_reasoning:-medium}
     fi
 
-    # 通用配置
-    echo -e "\n${BOLD}--- 通用配置 ---${NC}"
-    read -p "使用国内镜像？[true/false] (默认 true): " use_cn_mirror
+    # ========== 通用配置 ==========
+    echo -e "\n${BOLD}━━━ 通用配置 ━━━${NC}"
+    read -p "使用国内镜像加速？[true/false] (默认 true): " use_cn_mirror
     use_cn_mirror=${use_cn_mirror:-true}
 
-    # 写入配置
-    cat > "$INSTALL_DIR/.env" << EOF
-# Linux AI CLI Isolation - 配置文件 (自动生成)
+    read -p "代理地址 (留空不使用，如 http://127.0.0.1:7890): " proxy_url
 
+    # ========== 写入配置 ==========
+    cat > "$INSTALL_DIR/.env" << EOF
+# Linux AI CLI Isolation - 配置文件
+# 由 quick.sh 自动生成于 $(date '+%Y-%m-%d %H:%M:%S')
+
+# --- 通用设置 ---
 CONDA_ENV_NAME=ai_cli_env
 USE_CN_MIRROR=$use_cn_mirror
-PROXY_URL=
+PROXY_URL=$proxy_url
 
+# --- Claude Code ---
 CLAUDE_MODE=$claude_mode
 CLAUDE_URL=$claude_url
 CLAUDE_KEY=$claude_key
-CLAUDE_MODEL=claude-opus-4-5-20251101-thinking
-CLAUDE_SMALL_MODEL=claude-sonnet-4-5-20250929
+CLAUDE_MODEL=$claude_model
+CLAUDE_SMALL_MODEL=$claude_small_model
 
+# --- Gemini CLI ---
 GEMINI_MODE=$gemini_mode
 GEMINI_URL=$gemini_url
 GEMINI_KEY=$gemini_key
-GEMINI_MODEL=gemini-3-pro-preview
+GEMINI_MODEL=$gemini_model
 
+# --- Codex CLI ---
 CODEX_MODE=$codex_mode
 CODEX_URL=$codex_url
 CODEX_KEY=$codex_key
-CODEX_MODEL=gpt-5.1-codex-max
-CODEX_REASONING_EFFORT=medium
+CODEX_MODEL=$codex_model
+CODEX_REASONING_EFFORT=$codex_reasoning
 CODEX_WIRE_API=responses
 CODEX_NETWORK_ACCESS=enabled
 CODEX_DISABLE_RESPONSE_STORAGE=true
