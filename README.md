@@ -71,22 +71,38 @@ curl -fsSL https://cdn.jsdelivr.net/gh/SunnyCowMilk/linux-ai-cli-isolation@main/
 
 运行后会显示菜单，选择：
 1. **安装** - 自动检测网络 → 克隆仓库 → 交互式配置 → 安装
-2. **卸载** - 清理配置 + 删除安装目录
-3. **更新** - 拉取最新代码 + 重新配置
+2. **自包含模式安装** - 跳过下载，直接安装（网络不稳定时推荐）
+3. **卸载** - 清理配置 + 删除安装目录
+4. **更新** - 拉取最新代码 + 重新配置
 
 **网络自动切换**：脚本会自动检测网络环境，依次尝试：
 - GitHub 直连
 - mirror.ghproxy.com
 - ghproxy.com
 - gh-proxy.com
+- jsdelivr CDN（最后备选）
+
+**下载失败自动降级**：如果所有下载方式都失败，脚本会提示切换到「自包含模式」继续安装。
 
 也可以直接指定操作（跳过菜单）：
 
 ```bash
-curl -fsSL <上述地址> | bash -s -- install    # 直接安装
-curl -fsSL <上述地址> | bash -s -- uninstall  # 直接卸载
-curl -fsSL <上述地址> | bash -s -- update     # 更新配置
+curl -fsSL <上述地址> | bash -s -- install     # 正常安装（下载项目文件）
+curl -fsSL <上述地址> | bash -s -- standalone  # 自包含安装（跳过下载，网络不稳定推荐）
+curl -fsSL <上述地址> | bash -s -- uninstall   # 直接卸载
+curl -fsSL <上述地址> | bash -s -- update      # 更新配置
 ```
+
+### 自包含模式说明
+
+自包含模式适用于网络不稳定、无法下载项目文件的情况：
+
+| 对比项 | 正常模式 | 自包含模式 |
+|--------|----------|------------|
+| 需要下载项目文件 | 是 | 否 |
+| 安装目录 | `~/linux-ai-cli-isolation/` | 无（配置直接写入 `~/.xxx_env`） |
+| 后续更新/卸载 | 运行目录内的脚本 | 需要重新运行 quick.sh |
+| 适用场景 | 网络正常 | 网络不稳定 |
 
 > **提示**：如果没有 curl，可以先安装：`apt install curl` 或 `apk add curl`
 

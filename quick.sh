@@ -9,9 +9,10 @@
 #   curl -fsSL https://cdn.jsdelivr.net/gh/SunnyCowMilk/linux-ai-cli-isolation@main/quick.sh | bash
 #
 # 直接指定操作:
-#   curl ... | bash -s -- install    # 直接安装
-#   curl ... | bash -s -- uninstall  # 直接卸载
-#   curl ... | bash -s -- update     # 更新配置
+#   curl ... | bash -s -- install     # 正常安装（下载项目文件）
+#   curl ... | bash -s -- standalone  # 自包含安装（跳过下载，网络不稳定推荐）
+#   curl ... | bash -s -- uninstall   # 直接卸载
+#   curl ... | bash -s -- update      # 更新配置
 # ==============================================================================
 
 set -e
@@ -195,17 +196,20 @@ download_project() {
     if [ "$USE_JSDELIVR" = true ]; then
         # jsdelivr 模式：逐个下载文件
         echo -e "   使用 jsdelivr CDN 下载..."
-        download_via_jsdelivr
+        if ! download_via_jsdelivr; then
+            return 1  # 下载失败，返回错误码
+        fi
     else
         # git clone 模式
         echo -e "   正在克隆仓库..."
         if git clone --depth 1 "$SELECTED_REPO" "$INSTALL_DIR" 2>/dev/null; then
             echo -e "${GREEN}   ✅ 下载完成${NC}"
         else
-            echo -e "${RED}❌ 下载失败，请检查网络连接${NC}"
-            exit 1
+            echo -e "${YELLOW}   ⚠️  git clone 失败${NC}"
+            return 1  # 下载失败，返回错误码
         fi
     fi
+    return 0
 }
 
 # ==========================================
@@ -213,7 +217,8 @@ download_project() {
 # ==========================================
 download_via_jsdelivr() {
     mkdir -p "$INSTALL_DIR"
-    local files=("setup.sh" "update.sh" "remove.sh" ".env.example" "README.md" ".gitignore" "quick.sh")
+    # 只下载必要文件，减少下载量
+    local files=("setup.sh" "update.sh" "remove.sh" ".env.example")
     local failed=0
 
     for file in "${files[@]}"; do
@@ -228,11 +233,18 @@ download_via_jsdelivr() {
 
     chmod +x "$INSTALL_DIR"/*.sh 2>/dev/null || true
 
+    # 检查核心文件是否下载成功
+    if [ ! -f "$INSTALL_DIR/setup.sh" ]; then
+        echo -e "${YELLOW}   ⚠️  核心文件下载失败，将使用自包含模式安装${NC}"
+        return 1
+    fi
+
     if [ $failed -gt 0 ]; then
-        echo -e "${YELLOW}   ⚠️  部分文件下载失败，但核心文件可能已下载${NC}"
+        echo -e "${YELLOW}   ⚠️  部分文件下载失败，但核心文件已下载${NC}"
     else
         echo -e "${GREEN}   ✅ 下载完成${NC}"
     fi
+    return 0
 }
 
 # ==========================================
@@ -344,6 +356,181 @@ EOF
 }
 
 # ==========================================
+# 自包含安装（无需下载项目文件）
+# ==========================================
+do_standalone_install() {
+    echo -e "\n${BLUE}>>> 自包含模式安装...${NC}"
+    echo -e "${YELLOW}   无需下载额外文件，直接安装${NC}"
+
+    # 检查 npm
+    if ! command -v npm &> /dev/null; then
+        echo -e "${RED}❌ npm 未安装！请先安装 Node.js${NC}"
+        echo -e "${YELLOW}   Ubuntu/Debian: sudo apt install nodejs npm${NC}"
+        echo -e "${YELLOW}   Alpine:        apk add nodejs npm${NC}"
+        echo -e "${YELLOW}   macOS:         brew install node${NC}"
+        exit 1
+    fi
+
+    # 检测 shell profile
+    get_shell_profile() {
+        if [ -n "$ZSH_VERSION" ] || [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/bin/zsh" ]; then
+            echo "$HOME/.zshrc"
+        else
+            echo "$HOME/.bashrc"
+        fi
+    }
+
+    add_to_profile_file() {
+        local env_file="$1"
+        local profile_file="$2"
+        local source_line="[ -f \"$env_file\" ] && source \"$env_file\""
+
+        if [ -f "$profile_file" ]; then
+            if ! grep -qF "$env_file" "$profile_file"; then
+                echo "" >> "$profile_file"
+                echo "# AI CLI Configuration (added by quick.sh)" >> "$profile_file"
+                echo "$source_line" >> "$profile_file"
+                return 0
+            fi
+        else
+            echo "# AI CLI Configuration (added by quick.sh)" > "$profile_file"
+            echo "$source_line" >> "$profile_file"
+        fi
+        return 0
+    }
+
+    local SHELL_PROFILE=$(get_shell_profile)
+
+    # 确定是否需要 sudo
+    local NPM_CMD="npm install -g"
+    local NPM_PREFIX=$(npm config get prefix 2>/dev/null)
+    if [ -n "$NPM_PREFIX" ] && [ ! -w "$NPM_PREFIX/lib/node_modules" ] 2>/dev/null; then
+        if command -v sudo &> /dev/null; then
+            echo -e "${YELLOW}   需要 sudo 权限安装全局 npm 包${NC}"
+            NPM_CMD="sudo npm install -g"
+        fi
+    fi
+
+    # 设置 npm 镜像
+    if [ "$use_cn_mirror" = "true" ]; then
+        npm config set registry https://registry.npmmirror.com
+    fi
+
+    # 安装 CLI 工具
+    echo -e "\n${BLUE}>>> 安装 CLI 工具...${NC}"
+
+    if [ "$claude_mode" != "disabled" ]; then
+        echo -e "📦 安装 Claude Code..."
+        $NPM_CMD @anthropic-ai/claude-code
+    fi
+
+    if [ "$gemini_mode" != "disabled" ]; then
+        echo -e "📦 安装 Gemini CLI..."
+        $NPM_CMD @google/gemini-cli
+    fi
+
+    if [ "$codex_mode" != "disabled" ]; then
+        echo -e "📦 安装 Codex CLI..."
+        $NPM_CMD @openai/codex
+    fi
+
+    # 配置服务
+    echo -e "\n${BLUE}>>> 配置服务...${NC}"
+
+    # Claude 配置
+    if [ "$claude_mode" = "global" ]; then
+        echo -e "🔧 配置 Claude Code..."
+        local CLAUDE_CONFIG="$HOME/.claude_env"
+        cat << EOF > "$CLAUDE_CONFIG"
+# Claude Code Configuration (generated by quick.sh)
+export ANTHROPIC_BASE_URL="$claude_url"
+export ANTHROPIC_API_KEY="$claude_key"
+export ANTHROPIC_MODEL="$claude_model"
+export ANTHROPIC_SMALL_FAST_MODEL="$claude_small_model"
+EOF
+        chmod 600 "$CLAUDE_CONFIG"
+        add_to_profile_file "$CLAUDE_CONFIG" "$SHELL_PROFILE"
+        add_to_profile_file "$CLAUDE_CONFIG" "$HOME/.profile"
+    fi
+
+    # Gemini 配置
+    if [ "$gemini_mode" = "global" ]; then
+        echo -e "🔧 配置 Gemini CLI..."
+        mkdir -p "$HOME/.gemini"
+        echo '{"ide":{"enabled":true},"security":{"auth":{"selectedType":"gemini-api-key"}}}' > "$HOME/.gemini/settings.json"
+
+        local GEMINI_CONFIG="$HOME/.gemini_env"
+        cat << EOF > "$GEMINI_CONFIG"
+# Gemini CLI Configuration (generated by quick.sh)
+export GOOGLE_GEMINI_BASE_URL="$gemini_url"
+export GEMINI_API_KEY="$gemini_key"
+export GOOGLE_API_KEY="$gemini_key"
+export GEMINI_MODEL="$gemini_model"
+EOF
+        chmod 600 "$GEMINI_CONFIG"
+        add_to_profile_file "$GEMINI_CONFIG" "$SHELL_PROFILE"
+        add_to_profile_file "$GEMINI_CONFIG" "$HOME/.profile"
+    fi
+
+    # Codex 配置
+    if [ "$codex_mode" = "global" ]; then
+        echo -e "🔧 配置 Codex CLI..."
+        local CODEX_HOME_DIR="$HOME/.codex"
+        mkdir -p "$CODEX_HOME_DIR"
+
+        cat << EOF > "$CODEX_HOME_DIR/config.toml"
+model_provider = "openai"
+model = "$codex_model"
+model_reasoning_effort = "$codex_reasoning"
+network_access = "enabled"
+disable_response_storage = true
+
+[model_providers.openai]
+name = "openai"
+base_url = "$codex_url"
+wire_api = "responses"
+requires_openai_auth = true
+EOF
+
+        cat << EOF > "$CODEX_HOME_DIR/auth.json"
+{
+  "OPENAI_API_KEY": "$codex_key"
+}
+EOF
+        chmod 600 "$CODEX_HOME_DIR/auth.json"
+
+        local CODEX_CONFIG="$HOME/.codex_env"
+        cat << EOF > "$CODEX_CONFIG"
+# Codex CLI Configuration (generated by quick.sh)
+export OPENAI_API_KEY="$codex_key"
+export OPENAI_BASE_URL="$codex_url"
+EOF
+        chmod 600 "$CODEX_CONFIG"
+        add_to_profile_file "$CODEX_CONFIG" "$SHELL_PROFILE"
+        add_to_profile_file "$CODEX_CONFIG" "$HOME/.profile"
+    fi
+
+    # 配置代理
+    if [ -n "$proxy_url" ]; then
+        echo -e "🔧 配置代理..."
+        local PROXY_CONFIG="$HOME/.ai_proxy_env"
+        cat << EOF > "$PROXY_CONFIG"
+# Proxy Configuration (generated by quick.sh)
+export HTTP_PROXY="$proxy_url"
+export HTTPS_PROXY="$proxy_url"
+export ALL_PROXY="$proxy_url"
+EOF
+        add_to_profile_file "$PROXY_CONFIG" "$SHELL_PROFILE"
+        add_to_profile_file "$PROXY_CONFIG" "$HOME/.profile"
+    fi
+
+    echo -e "\n${GREEN}✅ 自包含模式安装完成！${NC}"
+    echo -e "${YELLOW}请运行以下命令使配置生效:${NC}"
+    echo -e "  ${GREEN}source $SHELL_PROFILE${NC}"
+    echo -e "  ${BLUE}(或重启终端)${NC}"
+}
+
+# ==========================================
 # 安装
 # ==========================================
 do_install() {
@@ -351,39 +538,77 @@ do_install() {
     check_existing_install
     check_network
     check_dependencies
-    download_project
+
+    # 尝试下载项目
+    local USE_STANDALONE=false
+    if ! download_project; then
+        echo -e "\n${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${YELLOW}项目下载失败，但可以使用自包含模式继续安装${NC}"
+        echo -e "${YELLOW}自包含模式：无需下载额外文件，直接安装 CLI 工具${NC}"
+        echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo ""
+        read -p "是否使用自包含模式继续？(Y/n): " use_standalone < /dev/tty
+        if [ "$use_standalone" = "n" ] || [ "$use_standalone" = "N" ]; then
+            echo -e "${RED}安装已取消${NC}"
+            exit 1
+        fi
+        USE_STANDALONE=true
+    fi
 
     echo -e "\n${YELLOW}请选择配置方式:${NC}"
-    echo -e "  ${GREEN}1)${NC} 交互式配置（推荐新手）"
-    echo -e "  ${GREEN}2)${NC} 手动编辑 .env 文件"
+    echo -e "  ${GREEN}1)${NC} 交互式配置（推荐）"
+    if [ "$USE_STANDALONE" = false ]; then
+        echo -e "  ${GREEN}2)${NC} 手动编辑 .env 文件"
+    fi
     echo -e "  ${GREEN}3)${NC} 使用默认配置"
     echo ""
     read -p "请选择 [1-3]: " config_choice < /dev/tty
 
-    cd "$INSTALL_DIR"
-    cp -n .env.example .env 2>/dev/null || true
+    if [ "$USE_STANDALONE" = true ]; then
+        # 自包含模式
+        case $config_choice in
+            1|"") interactive_config ;;
+            3)
+                # 使用默认值
+                claude_mode="global"
+                gemini_mode="global"
+                codex_mode="global"
+                use_cn_mirror="true"
+                ;;
+            *)
+                interactive_config
+                ;;
+        esac
+        do_standalone_install
+    else
+        # 正常模式：使用下载的项目文件
+        cd "$INSTALL_DIR"
+        cp -n .env.example .env 2>/dev/null || true
 
-    case $config_choice in
-        1) interactive_config ;;
-        2)
-            echo -e "\n${BLUE}请编辑配置文件后运行安装:${NC}"
-            echo -e "  ${GREEN}nano $INSTALL_DIR/.env${NC}"
-            echo -e "  ${GREEN}cd $INSTALL_DIR && ./setup.sh${NC}"
-            exit 0
-            ;;
-    esac
+        case $config_choice in
+            1) interactive_config ;;
+            2)
+                echo -e "\n${BLUE}请编辑配置文件后运行安装:${NC}"
+                echo -e "  ${GREEN}nano $INSTALL_DIR/.env${NC}"
+                echo -e "  ${GREEN}cd $INSTALL_DIR && ./setup.sh${NC}"
+                exit 0
+                ;;
+        esac
 
-    echo -e "\n${BLUE}>>> 运行安装脚本...${NC}"
-    chmod +x setup.sh remove.sh update.sh 2>/dev/null || true
-    ./setup.sh
+        echo -e "\n${BLUE}>>> 运行安装脚本...${NC}"
+        chmod +x setup.sh remove.sh update.sh 2>/dev/null || true
+        ./setup.sh
+    fi
 
     echo ""
     echo -e "${GREEN}${BOLD}╔═══════════════════════════════════════════════════════════╗${NC}"
     echo -e "${GREEN}${BOLD}║                    🎉 安装完成！                           ║${NC}"
     echo -e "${GREEN}${BOLD}╚═══════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "📁 安装目录: ${GREEN}$INSTALL_DIR${NC}"
-    echo ""
+    if [ "$USE_STANDALONE" = false ]; then
+        echo -e "📁 安装目录: ${GREEN}$INSTALL_DIR${NC}"
+        echo ""
+    fi
     echo -e "${YELLOW}使用命令:${NC}"
     echo -e "  ${GREEN}claude${NC}  - Claude Code"
     echo -e "  ${GREEN}gemini${NC}  - Gemini CLI"
@@ -469,6 +694,49 @@ do_update() {
 }
 
 # ==========================================
+# 直接自包含安装（跳过下载）
+# ==========================================
+do_standalone_only() {
+    show_banner
+    check_existing_install
+    check_dependencies
+
+    echo -e "${BLUE}>>> 自包含模式（跳过项目下载）${NC}"
+    echo ""
+
+    echo -e "\n${YELLOW}请选择配置方式:${NC}"
+    echo -e "  ${GREEN}1)${NC} 交互式配置（推荐）"
+    echo -e "  ${GREEN}2)${NC} 使用默认配置"
+    echo ""
+    read -p "请选择 [1-2]: " config_choice < /dev/tty
+
+    case $config_choice in
+        1|"") interactive_config ;;
+        2)
+            claude_mode="global"
+            gemini_mode="global"
+            codex_mode="global"
+            use_cn_mirror="true"
+            ;;
+        *)
+            interactive_config
+            ;;
+    esac
+
+    do_standalone_install
+
+    echo ""
+    echo -e "${GREEN}${BOLD}╔═══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}${BOLD}║                    🎉 安装完成！                           ║${NC}"
+    echo -e "${GREEN}${BOLD}╚═══════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${YELLOW}使用命令:${NC}"
+    echo -e "  ${GREEN}claude${NC}  - Claude Code"
+    echo -e "  ${GREEN}gemini${NC}  - Gemini CLI"
+    echo -e "  ${GREEN}codex${NC}   - Codex CLI"
+}
+
+# ==========================================
 # 显示菜单
 # ==========================================
 show_menu() {
@@ -484,16 +752,18 @@ show_menu() {
 
     echo -e "${YELLOW}请选择操作:${NC}"
     echo -e "  ${GREEN}1)${NC} 安装 AI CLI 工具"
-    echo -e "  ${GREEN}2)${NC} 卸载 AI CLI 工具"
-    echo -e "  ${GREEN}3)${NC} 更新配置"
+    echo -e "  ${GREEN}2)${NC} 自包含模式安装（跳过下载，网络不稳定时推荐）"
+    echo -e "  ${GREEN}3)${NC} 卸载 AI CLI 工具"
+    echo -e "  ${GREEN}4)${NC} 更新配置"
     echo -e "  ${GREEN}0)${NC} 退出"
     echo ""
-    read -p "请选择 [0-3]: " choice < /dev/tty
+    read -p "请选择 [0-4]: " choice < /dev/tty
 
     case $choice in
         1) do_install ;;
-        2) do_uninstall ;;
-        3) do_update ;;
+        2) do_standalone_only ;;
+        3) do_uninstall ;;
+        4) do_update ;;
         0) echo "再见！"; exit 0 ;;
         *) echo -e "${RED}无效选择${NC}"; exit 1 ;;
     esac
@@ -504,10 +774,11 @@ show_menu() {
 # ==========================================
 main() {
     case "${1:-}" in
-        install)   do_install ;;
-        uninstall) do_uninstall ;;
-        update)    do_update ;;
-        *)         show_menu ;;
+        install)    do_install ;;
+        standalone) do_standalone_only ;;
+        uninstall)  do_uninstall ;;
+        update)     do_update ;;
+        *)          show_menu ;;
     esac
 }
 
