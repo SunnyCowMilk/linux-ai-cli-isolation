@@ -26,9 +26,9 @@ NC='\033[0m'
 # GitHub 仓库地址（多镜像源）
 REPO_GITHUB="https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git"
 REPO_MIRRORS=(
-    "https://cdn.jsdelivr.net/gh/SunnyCowMilk/linux-ai-cli-isolation"
     "https://mirror.ghproxy.com/https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git"
     "https://ghproxy.com/https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git"
+    "https://gh-proxy.com/https://github.com/SunnyCowMilk/linux-ai-cli-isolation.git"
 )
 INSTALL_DIR="$HOME/linux-ai-cli-isolation"
 SELECTED_REPO=""
@@ -105,14 +105,11 @@ check_network() {
 
     # 依次测试镜像源
     for mirror in "${REPO_MIRRORS[@]}"; do
-        local test_url="$mirror"
-        # jsdelivr 需要特殊处理
-        if [[ "$mirror" == *"jsdelivr"* ]]; then
-            test_url="${mirror}@main/README.md"
-        fi
+        # 提取域名用于显示
+        local domain=$(echo "$mirror" | sed 's|https://||' | cut -d'/' -f1)
+        echo -n "   测试 $domain ... "
 
-        echo -n "   测试 ${mirror%%/*}... "
-        if curl -s --connect-timeout 5 "$test_url" > /dev/null 2>&1; then
+        if curl -s --connect-timeout 5 "$mirror" > /dev/null 2>&1; then
             echo -e "${GREEN}可用${NC}"
             SELECTED_REPO="$mirror"
             return 0
@@ -173,41 +170,14 @@ download_project() {
         fi
     fi
 
-    # 根据镜像源类型选择下载方式
-    if [[ "$SELECTED_REPO" == *"jsdelivr"* ]]; then
-        # jsdelivr 不支持 git clone，需要手动下载文件
-        echo -e "   使用 jsdelivr CDN 下载..."
-        download_via_jsdelivr
+    # 使用 git clone 下载
+    echo -e "   正在克隆仓库..."
+    if git clone --depth 1 "$SELECTED_REPO" "$INSTALL_DIR" 2>/dev/null; then
+        echo -e "${GREEN}   ✅ 下载完成${NC}"
     else
-        # 使用 git clone
-        echo -e "   使用 git clone 下载..."
-        git clone "$SELECTED_REPO" "$INSTALL_DIR" || {
-            echo -e "${RED}❌ 下载失败${NC}"
-            exit 1
-        }
+        echo -e "${RED}❌ 下载失败，请检查网络连接${NC}"
+        exit 1
     fi
-
-    echo -e "${GREEN}   ✅ 下载完成${NC}"
-}
-
-# ==========================================
-# 通过 jsdelivr 下载（备用方案）
-# ==========================================
-download_via_jsdelivr() {
-    mkdir -p "$INSTALL_DIR"
-    local base_url="$SELECTED_REPO@main"
-    local files=("setup.sh" "update.sh" "remove.sh" ".env.example" "README.md" ".gitignore" "quick.sh")
-
-    for file in "${files[@]}"; do
-        echo -n "   下载 $file... "
-        if curl -fsSL "${base_url}/${file}" -o "$INSTALL_DIR/$file" 2>/dev/null; then
-            echo -e "${GREEN}✓${NC}"
-        else
-            echo -e "${RED}✗${NC}"
-        fi
-    done
-
-    chmod +x "$INSTALL_DIR"/*.sh 2>/dev/null || true
 }
 
 # ==========================================

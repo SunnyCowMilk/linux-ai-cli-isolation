@@ -65,20 +65,20 @@
 # 国际网络（直连 GitHub）
 curl -fsSL https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/quick.sh | bash
 
-# 国内网络（使用 jsdelivr CDN 加速）
+# 国内网络（使用 jsdelivr CDN 下载脚本）
 curl -fsSL https://cdn.jsdelivr.net/gh/SunnyCowMilk/linux-ai-cli-isolation@main/quick.sh | bash
 ```
 
 运行后会显示菜单，选择：
-1. **安装** - 自动检测网络 → 下载项目 → 交互式配置 → 安装
+1. **安装** - 自动检测网络 → 克隆仓库 → 交互式配置 → 安装
 2. **卸载** - 清理配置 + 删除安装目录
 3. **更新** - 拉取最新代码 + 重新配置
 
 **网络自动切换**：脚本会自动检测网络环境，依次尝试：
 - GitHub 直连
-- jsdelivr CDN
 - mirror.ghproxy.com
 - ghproxy.com
+- gh-proxy.com
 
 也可以直接指定操作（跳过菜单）：
 
