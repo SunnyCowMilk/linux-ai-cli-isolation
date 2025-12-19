@@ -63,29 +63,31 @@
 
 ```bash
 # 国际网络
-curl -fsSL https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/quick.sh | bash
 
 # 国内网络（使用加速镜像）
-curl -fsSL https://ghproxy.com/https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/install.sh | bash
+curl -fsSL https://ghproxy.com/https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/quick.sh | bash
 ```
 
-安装脚本会自动：
-1. 检测网络环境（自动选择最快的下载源）
-2. 下载项目到 `~/linux-ai-cli-isolation`
-3. 引导你配置 API Key（支持交互式配置）
-4. 运行安装程序
+运行后会显示菜单，选择：
+1. **安装** - 下载项目 + 交互式配置 + 自动安装
+2. **卸载** - 清理配置 + 删除安装目录
+3. **更新** - 拉取最新代码 + 重新配置
 
-> **提示**：如果没有 curl，可以先安装：`apt install curl` 或 `apk add curl`
-
-### 一键卸载
+也可以直接指定操作：
 
 ```bash
-# 国际网络
-curl -fsSL https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/uninstall.sh | bash
+# 直接安装
+curl -fsSL https://xxx/quick.sh | bash -s -- install
 
-# 国内网络
-curl -fsSL https://ghproxy.com/https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/uninstall.sh | bash
+# 直接卸载
+curl -fsSL https://xxx/quick.sh | bash -s -- uninstall
+
+# 更新配置
+curl -fsSL https://xxx/quick.sh | bash -s -- update
 ```
+
+> **提示**：如果没有 curl，可以先安装：`apt install curl` 或 `apk add curl`
 
 ## 手动安装
 
@@ -398,8 +400,7 @@ CODEX_URL=https://your-proxy-provider.com/v1
 
 ```
 linux-ai-cli-isolation/
-├── install.sh        # 一键安装脚本（curl 下载使用）
-├── uninstall.sh      # 一键卸载脚本（curl 下载使用）
+├── quick.sh          # 一键管理脚本（安装/卸载/更新）
 ├── setup.sh          # 安装脚本
 ├── update.sh         # 更新配置脚本（无需重装）
 ├── remove.sh         # 卸载脚本
