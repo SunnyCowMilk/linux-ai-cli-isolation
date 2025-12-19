@@ -219,12 +219,12 @@ CLAUDE_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxx
 
 #### CLAUDE_MODEL 详解
 
-选择要使用的 Claude 模型：
+选择要使用的 Claude 模型（以下为示例，实际可用模型请参考 [Anthropic 官方文档](https://docs.anthropic.com/en/docs/about-claude/models)）：
 
-| 模型 | 特点 | 适用场景 |
+| 示例模型 | 特点 | 适用场景 |
 |------|------|----------|
 | `claude-opus-4-5-20251101-thinking` | 最强大，支持深度思考 | 复杂编程任务 |
-| `claude-sonnet-4-20250514` | 平衡性能和速度 | 日常开发（推荐） |
+| `claude-sonnet-4-5-20250929` | 平衡性能和速度 | 日常开发（推荐） |
 | `claude-haiku-4-5-20251001` | 最快速，成本最低 | 简单任务、代码补全 |
 
 ---
@@ -253,13 +253,13 @@ GEMINI_KEY=AIzaSyxxxxxxxxxxxxxxxxxxxxxxxxx
 
 #### GEMINI_MODEL 详解
 
-选择要使用的 Gemini 模型：
+选择要使用的 Gemini 模型（以下为示例，实际可用模型请参考 [Google AI 官方文档](https://ai.google.dev/gemini-api/docs/models)）：
 
-| 模型 | 特点 |
+| 示例模型 | 特点 |
 |------|------|
-| `gemini-2.5-pro` | 最新专业版，功能最强 |
+| `gemini-3-pro-preview` | 专业版，功能最强 |
+| `gemini-2.5-pro` | 上一代专业版 |
 | `gemini-2.5-flash` | 快速版，响应更快 |
-| `gemini-2.0-flash` | 上一代快速版 |
 
 ---
 
@@ -291,14 +291,14 @@ CODEX_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 #### CODEX_MODEL 详解
 
-选择要使用的模型：
+选择要使用的模型（以下为示例，实际可用模型请参考 [OpenAI 官方文档](https://platform.openai.com/docs/models)）：
 
-| 模型 | 特点 |
+| 示例模型 | 特点 |
 |------|------|
-| `gpt-5.1-codex-max` | 最强代码模型 |
-| `gpt-5.1-codex` | 标准代码模型 |
+| `gpt-5.1-codex-max` | 代码模型 |
+| `o3` | 推理增强模型 |
+| `gpt-4.1` | 通用模型 |
 | `gpt-4o` | 通用多模态模型 |
-| `o1` | 推理增强模型 |
 
 #### CODEX_REASONING_EFFORT 详解
 
@@ -565,6 +565,27 @@ source ~/.zshrc    # zsh 用户
 ./setup.sh
 ```
 
+### Q: 全局模式下报错 "npm not found"
+
+**原因**：全局模式不使用 Conda，需要预先安装 Node.js 和 npm。
+
+**解决方案**：
+```bash
+# Ubuntu/Debian
+sudo apt update && sudo apt install nodejs npm
+
+# Alpine Linux
+apk add nodejs npm
+
+# macOS
+brew install node
+
+# 安装后重新运行 setup.sh
+./setup.sh
+```
+
+> **说明**：isolated 模式会通过 Conda 自动安装 Node.js，全局模式则需要用户自行安装。
+
 ### Q: WSL 新环境如何从零开始安装？
 
 **问题**：新安装的 WSL（尤其是 Alpine Linux）可能缺少 git、bash、npm 等基础工具。
@@ -633,7 +654,6 @@ CODEX_MODE=global
 |----------|------|
 | `ANTHROPIC_BASE_URL` | API 服务地址 |
 | `ANTHROPIC_API_KEY` | API 密钥 |
-| `ANTHROPIC_AUTH_TOKEN` | 认证令牌（同 API_KEY） |
 | `ANTHROPIC_MODEL` | 主模型名称 |
 | `ANTHROPIC_SMALL_FAST_MODEL` | 快速模型名称 |
 
