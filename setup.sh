@@ -215,9 +215,15 @@ echo -e "\n${BLUE}>>> Installing CLI tools...${NC}"
 # Check if npm is available
 if ! command -v npm &> /dev/null; then
     echo -e "${RED}❌ npm not found! Please install Node.js first.${NC}"
-    echo -e "${YELLOW}   Ubuntu/Debian: sudo apt install nodejs npm${NC}"
-    echo -e "${YELLOW}   Alpine:        apk add nodejs npm${NC}"
-    echo -e "${YELLOW}   macOS:         brew install node${NC}"
+    echo -e "${YELLOW}   Run the following command to install Node.js LTS:${NC}"
+    echo -e "${GREEN}   curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && apt-get install -y nodejs${NC}"
+    echo -e "${YELLOW}   (Note: This command requires root privileges, you may need to run with sudo)${NC}"
+    
+    # Optional: Other distributions fallback
+    echo -e "${YELLOW}   Or use your package manager:${NC}"
+    echo -e "   Ubuntu/Debian: sudo apt install nodejs npm"
+    echo -e "   Alpine:        apk add nodejs npm"
+    echo -e "   macOS:         brew install node"
     exit 1
 fi
 

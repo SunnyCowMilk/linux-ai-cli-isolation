@@ -619,7 +619,14 @@ source ~/.zshrc    # zsh 用户
 
 **原因**：全局模式不使用 Conda，需要预先安装 Node.js 和 npm。
 
-**解决方案**：
+**解决方案**（推荐）：
+使用 NodeSource 安装最新的 LTS 版本：
+```bash
+# 需要 root 权限或 sudo
+curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && apt-get install -y nodejs
+```
+
+或者使用系统包管理器（版本可能较旧）：
 ```bash
 # Ubuntu/Debian
 sudo apt update && sudo apt install nodejs npm
@@ -629,6 +636,7 @@ apk add nodejs npm
 
 # macOS
 brew install node
+
 
 # 安装后重新运行 setup.sh
 ./setup.sh
