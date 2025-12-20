@@ -5,8 +5,8 @@
 # 使用方法:
 #   curl -fsSL https://raw.githubusercontent.com/SunnyCowMilk/linux-ai-cli-isolation/main/quick.sh | bash
 #
-# 国内用户（使用 jsdelivr CDN 加速）:
-#   curl -fsSL https://cdn.jsdelivr.net/gh/SunnyCowMilk/linux-ai-cli-isolation@main/quick.sh | bash
+# 国内用户（使用 gitee ）:
+#   curl -fsSL https://gitee.com/SunnyCowMilk/linux-ai-cli-isolation/raw/master/quick.sh | bash
 #
 # 直接指定操作:
 #   curl ... | bash -s -- install     # 正常安装（下载项目文件）
